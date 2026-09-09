@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Cloud Task Scheduling Dashboard</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#eef2f7;
+}
+
+.container{
+width:85%;
+margin:auto;
+}
+
+h1{
+text-align:center;
+color:#1a237e;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+}
+
+input{
+width:300px;
+padding:6px;
+margin-top:5px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+background:white;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:8px;
+text-align:center;
+}
+
+button{
+padding:10px;
+margin-top:15px;
+background:#3949ab;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#1a237e;
+}
+
+.output{
+margin-top:20px;
+background:white;
+padding:15px;
+border-radius:8px;
+}
+
+.timeline{
+margin-top:20px;
+background:white;
+padding:15px;
+border-radius:8px;
+min-height:60px;
+}
+
+.slot{
+padding:8px;
+margin:5px 0;
+background:#e3f2fd;
+border-left:5px solid #3949ab;
+display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Smart Cloud Job Scheduling Dashboard</h1>
+
+<h3>Task Submission Interface</h3>
+
+<label>Task ID</label>
+<input type="text" id="taskID">
+
+<label>Task Name</label>
+<input type="text" id="taskName">
+
+<label>Deadline</label>
+<input type="number" id="deadline">
+
+<label>Profit</label>
+<input type="number" id="priority">
+
+<button onclick="addTask()">Submit Task</button>
+
+<h3>Cloud Task Queue Buffer</h3>
+
+<table id="taskTable">
+
+<tr>
+<th>Task ID</th>
+<th>Task Name</th>
+<th>Deadline</th>
+<th>Profit</th>
+<th>Status</th>
+</tr>
+
+</table>
+
+<button onclick="scheduleTasks()">Allocate Execution Slots</button>
+
+<div class="output" id="result"></div>
+
+<div class="timeline" id="timeline">
+<h3>Execution Timeline</h3>
+</div>
+
+</div>
+
+<script>
+
+let taskQueue=[];
+
+/* ADD TASK */
+function addTask(){
+
+let id=document.getElementById("taskID").value;
+let name=document.getElementById("taskName").value;
+let deadline=parseInt(document.getElementById("deadline").value);
+let priority=parseInt(document.getElementById("priority").value);
+
+if(id=="" || name=="" || isNaN(deadline) || isNaN(priority)){
+alert("Enter all task parameters");
+return;
+}
+
+taskQueue.push({
+id,
+name,
+deadline,
+priority,
+status:"Waiting"
+});
+
+updateTable();
+
+/* AUTO CLEAR INPUT FIELDS */
+document.getElementById("taskID").value="";
+document.getElementById("taskName").value="";
+document.getElementById("deadline").value="";
+document.getElementById("priority").value="";
+
+}
+
+/* UPDATE TABLE */
+function updateTable(){
+
+let table=document.getElementById("taskTable");
+
+table.innerHTML=`
+<tr>
+<th>Task ID</th>
+<th>Task Name</th>
+<th>Deadline</th>
+<th>Profit</th>
+<th>Status</th>
+</tr>`;
+
+taskQueue.forEach(task=>{
+
+table.innerHTML+=`
+<tr>
+<td>${task.id}</td>
+<td>${task.name}</td>
+<td>${task.deadline}</td>
+<td>${task.priority}</td>
+<td>${task.status}</td>
+</tr>`;
+
+});
+
+}
+
+/* SCHEDULER + TIMELINE ANIMATION */
+function scheduleTasks(){
+
+taskQueue.sort((a,b)=>b.priority-a.priority);
+
+let maxDeadline=Math.max(...taskQueue.map(t=>t.deadline));
+
+let slots=new Array(maxDeadline).fill(null);
+
+let totalPriority=0;
+
+let timelineDiv=document.getElementById("timeline");
+
+timelineDiv.innerHTML="<h3>Execution Timeline</h3>";
+
+/* GREEDY SCHEDULING */
+for(let task of taskQueue){
+
+for(let i=task.deadline-1;i>=0;i--){
+
+if(slots[i]==null){
+
+slots[i]=task.name;
+
+task.status="Allocated";
+
+totalPriority+=task.priority;
+
+break;
+
+}
+
+}
+
+}
+
+/* ANIMATION */
+slots.forEach((task,index)=>{
+
+setTimeout(()=>{
+
+if(task!=null){
+
+let div=document.createElement("div");
+
+div.className="slot";
+
+div.style.display="block";
+
+div.innerHTML="⏱ Slot " + (index+1) + " → " + task;
+
+timelineDiv.appendChild(div);
+
+}
+
+},index*800);
+
+});
+
+updateTable();
+
+document.getElementById("result").innerHTML=`
+<h3>Optimal Cloud Execution Plan Generated</h3>
+Execution Slots:<br>
+${slots.join(" → ")}<br><br>
+Total Resource Utilization Score = <b>${totalPriority}</b>
+`;
+
+}
+
+</script>
+
+</body>
+
+</html>
